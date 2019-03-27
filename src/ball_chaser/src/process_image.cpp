@@ -22,41 +22,58 @@ void process_image_callback(const sensor_msgs::Image img)
     int white_pixel = 255;
     int ball_x = -1, ball_y = -1, white_pixel_count = 0;
     float white_pixel_cutoff = 0.70;
+    int channels = img.step / img.width;
 
     // Loop through each pixel looking for a bright white (r,b,g=255) one.
     // Keep track of the number of pixels that fit this criteria.
-    for (int i = 0; i < img.height * img.step; i++) {
-        if (img.data[i] - white_pixel == 0) {
-            ball_y = i / img.step;
-            ball_x = (i % img.step) / (img.step / img.width);
+    // Assume RGB or BGR aligned at the beginning of each step.
+    for (int i = 0; i < img.height * img.step; i += channels)
+    {
+        if (img.data[i] == white_pixel &&
+            img.data[i + 1] == white_pixel &&
+            img.data[i + 2] == white_pixel)
+        {
+            if (ball_x == -1) {
+                ball_y = i / img.step;
+                ball_x = (i % img.step) / channels;
+            }
             white_pixel_count += 1;
         }
     }
 
     // ENHNACEMENT: Calculate the % of pixels that are white. This is used to stop the
     // robot when the white ball is touching the nose.
-    float white_pixel_percent = (float)white_pixel_count / (img.height * img.step);
+    float white_pixel_percent = (float)white_pixel_count / (img.height * img.width);
     ROS_INFO_STREAM("White pixel percent: " + std::to_string(white_pixel_percent));
 
-    if (ball_x != -1 && ball_y != -1 && white_pixel_percent < 0.70) {
+    // Ball X,Y pixels are aligned with the far left of the camera (i.e. the first pixel in the image).
+    if (ball_x != -1 && ball_y != -1 && white_pixel_percent < 0.70)
+    {
         float third = img.width / 3;
-	float ang_z;
-        if (ball_x < third) {
+        float ang_z;
+        if (ball_x < third)
+        {
             // Pixel is in the left third, so go left at an appropriate angle.
             ang_z = 0.5 * (third / (ball_x + 1));
             ROS_INFO_STREAM("Going left: " + std::to_string(ang_z));
             drive_robot(0.5, ang_z);
-        } else if (ball_x < third * 2) {
+        }
+        else if (ball_x < third * 2)
+        {
             // Pixel is in the middle third, so go straight.
             ROS_INFO_STREAM("Going straight");
             drive_robot(0.5, 0);
-        } else {
+        }
+        else
+        {
             // Pixel is in the right third, so go right at an appropriate angle.
             ang_z = -0.5 * ball_x / img.width;
             ROS_INFO_STREAM("Going right: " + std::to_string(ang_z));
             drive_robot(0.5, ang_z);
         }
-    } else {
+    }
+    else
+    {
         drive_robot(0, 0);
     }
 }
