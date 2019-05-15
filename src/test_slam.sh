@@ -1,6 +1,11 @@
+source ../devel/setup.bash
 export TURTLEBOT_GAZEBO_WORLD_FILE="$(pwd)/my_robot/worlds/jonathan.world"
 export TURTLEBOT_GAZEBO_MAP_FILE="$(pwd)/my_robot/maps/map.yaml"
+export ROBOT_INITIAL_POSE="-x 2 -y 0 -z 0"
 xterm -e "roslaunch turtlebot_simulator/turtlebot_gazebo/launch/turtlebot_world.launch" &
-xterm -e "roslaunch turtlebot_navigation gmapping_demo.launch" &
+sleep 5
+xterm -e "roslaunch turtlebot_navigation gmapping_demo.launch map_file:=$TURTLEBOT_GAZEBO_MAP_FILE" &
+sleep 5
 xterm -e "roslaunch turtlebot_rviz_launchers view_navigation.launch" &
+sleep 5
 xterm -e "roslaunch turtlebot_teleop keyboard_teleop.launch" &
